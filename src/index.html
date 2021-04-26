@@ -20,8 +20,10 @@
     <script type="module">
       import React, { createElement } from 'react'
       import ReactDOM from 'react-dom'
+      import { setup } from 'goober'
       import App from './App'
 
+      setup(React.createElement)
       ReactDOM.render(createElement(React.StrictMode, null, createElement(App)), document.getElementById('root'))
     </script>
   </body>

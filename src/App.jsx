@@ -1,23 +1,79 @@
-import { useRef } from 'react'
-import { OrbitControls, TorusKnot } from '@react-three/drei'
+import { Suspense, useMemo } from 'react'
+import { Environment, useGLTF } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
+import { styled, css } from 'goober'
+import { AnimationMixer } from 'three'
+import { useSnapshot, proxy, subscribe } from 'valtio'
+import { useScroll } from 'react-use-gesture'
+
+const state = proxy({
+  progress: 0,
+})
+
+const Wrapper = styled('div')`
+  height: 100%;
+  font-family: sans-serif;
+`
+
+const Overlay = styled('div')`
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  overflow-y: scroll;
+`
+
+const Chunk = styled('div')`
+  height: 100vh;
+  width: 100%;
+  display: grid;
+  place-content: center;
+  font-weight: bold;
+`
+
+const ignorePointer = css`
+  pointer-events: none;
+`
 
 export default function App() {
+  const bind = useScroll(({ xy: [x, y], event: { target } }) => (state.progress = y / target.scrollTopMax))
   return (
-    <Canvas>
-      <color attach="background" args={['black']} />
-      <OrbitControls />
-      <Thing />
-    </Canvas>
+    <Wrapper>
+      <Overlay {...bind()} id="foo">
+        <Chunk>
+          <h1>Hello</h1>
+        </Chunk>
+        <Chunk>
+          <h1>World.</h1>
+        </Chunk>
+      </Overlay>
+      <Canvas concurrent className={ignorePointer}>
+        <Suspense fallback={null}>
+          <Model />
+          <Environment preset="warehouse" />
+        </Suspense>
+      </Canvas>
+    </Wrapper>
   )
 }
 
-function Thing() {
-  const ref = useRef()
-  useFrame(() => (ref.current.rotation.y += 0.01))
-  return (
-    <TorusKnot ref={ref} args={[1, 0.3, 128, 16]}>
-      <meshNormalMaterial />
-    </TorusKnot>
-  )
+function Model() {
+  const { scene, animations } = useGLTF('fracture.glb')
+  window.animations = animations
+  const { mixer, actions, duration } = useMemo(() => {
+    const mixer = new AnimationMixer(scene)
+    const actions = animations.map((clip) => mixer.clipAction(clip))
+    actions.forEach((action) => {
+      action.play()
+      action.clampWhenFinished = true
+    })
+    const duration = animations.reduce((acc, clip) => Math.max(acc, clip.duration), 0) - 1e-9
+    return { mixer, actions, duration }
+  }, [animations])
+  subscribe(state, () => mixer.setTime(state.progress * duration))
+  window.mixer = mixer
+  window.actions = actions
+  return <primitive object={scene} />
 }
