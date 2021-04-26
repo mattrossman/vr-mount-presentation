@@ -1,4 +1,4 @@
-import { Suspense, useMemo } from 'react'
+import { Suspense, useEffect, useMemo } from 'react'
 import { Environment, useGLTF } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { styled, css } from 'goober'
@@ -28,6 +28,7 @@ const Overlay = styled('div')`
 const Chunk = styled('div')`
   height: 100vh;
   width: 100%;
+  margin-bottom: 50%;
   display: grid;
   place-content: center;
   font-weight: bold;
@@ -38,7 +39,7 @@ const ignorePointer = css`
 `
 
 export default function App() {
-  const bind = useScroll(({ xy: [x, y], event: { target } }) => (state.progress = y / target.scrollTopMax))
+  const bind = useScroll(({ xy: [x, y], event: { target } }) => (state.progress = y / (target.scrollHeight - target.offsetHeight)))
   return (
     <Wrapper>
       <Overlay {...bind()} id="foo">
@@ -47,6 +48,9 @@ export default function App() {
         </Chunk>
         <Chunk>
           <h1>World.</h1>
+        </Chunk>
+        <Chunk>
+          <h1>asdf.</h1>
         </Chunk>
       </Overlay>
       <Canvas concurrent className={ignorePointer}>
@@ -59,9 +63,25 @@ export default function App() {
   )
 }
 
+function useCamera(root) {
+  const camera = root.getObjectByProperty('isCamera', true)
+  useEffect(() => {
+    const onResize = () => {
+      camera.aspect = window.innerWidth / window.innerHeight
+      camera.updateProjectionMatrix()
+    }
+    onResize()
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  useFrame(({ gl, scene }) => {
+    gl.render(scene, camera)
+  }, 1)
+}
+
 function Model() {
-  const { scene, animations } = useGLTF('fracture.glb')
-  window.animations = animations
+  const { scene, animations } = useGLTF('animation.glb')
+  useCamera(scene)
   const { mixer, actions, duration } = useMemo(() => {
     const mixer = new AnimationMixer(scene)
     const actions = animations.map((clip) => mixer.clipAction(clip))
@@ -72,8 +92,8 @@ function Model() {
     const duration = animations.reduce((acc, clip) => Math.max(acc, clip.duration), 0) - 1e-9
     return { mixer, actions, duration }
   }, [animations])
-  subscribe(state, () => mixer.setTime(state.progress * duration))
-  window.mixer = mixer
-  window.actions = actions
+  subscribe(state, () => {
+    mixer.setTime(state.progress * duration)
+  })
   return <primitive object={scene} />
 }
