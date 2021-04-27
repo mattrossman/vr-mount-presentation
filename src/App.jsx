@@ -1,10 +1,11 @@
-import { Suspense, useEffect, useMemo } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { Environment, useGLTF } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { styled, css } from 'goober'
 import { AnimationMixer } from 'three'
 import { useSnapshot, proxy, subscribe } from 'valtio'
 import { useScroll } from 'react-use-gesture'
+import { a, useTransition } from '@react-spring/web'
 
 const state = proxy({
   progress: 0,
@@ -23,40 +24,59 @@ const Overlay = styled('div')`
   left: 0;
   z-index: 1;
   overflow-y: scroll;
-`
-
-const Chunk = styled('div')`
-  height: 100vh;
-  width: 100%;
-  margin-bottom: 50%;
-  display: grid;
-  place-content: center;
-  font-weight: bold;
+  color: white;
 `
 
 const ignorePointer = css`
   pointer-events: none;
 `
 
+const Fixed = styled('div')`
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 100vw;
+  pointer-events: none;
+`
+
+function Info({ start, end, ...props }) {
+  const [visible, setVisible] = useState(false)
+  const transition = useTransition(visible, {
+    from: { position: 'absolute', width: '100%', height: '100%', opacity: 0 },
+    enter: { opacity: 1 },
+    leave: { opacity: 0 },
+    config: { tension: 400 },
+  })
+  useEffect(() => {
+    const unsubscribe = subscribe(state, () => {
+      const shouldBeVisible = start <= state.progress && state.progress < end
+      if (visible != shouldBeVisible) setVisible(shouldBeVisible)
+    })
+    return unsubscribe
+  }, [visible])
+  return transition((style, visible) => visible && <a.div style={style} {...props} />)
+}
+
 export default function App() {
   const bind = useScroll(({ xy: [x, y], event: { target } }) => (state.progress = y / (target.scrollHeight - target.offsetHeight)))
   return (
     <Wrapper>
       <Overlay {...bind()} id="foo">
-        <Chunk>
-          <h1>Hello</h1>
-        </Chunk>
-        <Chunk>
-          <h1>World.</h1>
-        </Chunk>
-        <Chunk>
-          <h1>asdf.</h1>
-        </Chunk>
+        <div style={{ height: 2000 }} />
+        <Fixed>
+          <Info start={0} end={0.5}>
+            <div style={{ padding: '10%' }}>
+              <h1 style={{ fontSize: 48 }}>ASSIGNMENT 5</h1>
+            </div>
+          </Info>
+        </Fixed>
       </Overlay>
       <Canvas concurrent className={ignorePointer}>
+        <color attach="background" args={['black']} />
         <Suspense fallback={null}>
           <Model />
-          <Environment preset="warehouse" />
+          <Environment preset="studio" />
         </Suspense>
       </Canvas>
     </Wrapper>
@@ -80,7 +100,7 @@ function useCamera(root) {
 }
 
 function Model() {
-  const { scene, animations } = useGLTF('animation.glb')
+  const { scene, animations } = useGLTF('Assignment5.glb')
   useCamera(scene)
   const { mixer, actions, duration } = useMemo(() => {
     const mixer = new AnimationMixer(scene)
