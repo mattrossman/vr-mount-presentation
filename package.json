@@ -11,6 +11,7 @@
     "@react-spring/web": "^9.1.2",
     "@react-three/drei": "^4.3.1",
     "@react-three/fiber": "^6.0.16",
+    "@twind/react": "^0.0.4",
     "@twind/vite-plugin-jsx": "^2.1.0",
     "goober": "^2.0.37",
     "leva": "^0.9.9",

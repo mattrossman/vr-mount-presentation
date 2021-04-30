@@ -1,9 +1,9 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Environment, useAnimations, useGLTF } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { styled, css } from 'goober'
-import { useSnapshot, proxy, subscribe } from 'valtio'
-import { useScroll } from 'react-use-gesture'
+import { css, apply } from 'twind/css'
+import { styled } from '@twind/react'
+import { proxy, subscribe } from 'valtio'
 import { a, useTransition } from '@react-spring/web'
 import * as THREE from 'three'
 import { useDefaultCamera } from './hooks'
@@ -12,34 +12,12 @@ const state = proxy({
   progress: 0,
 })
 
-const Overlay = styled('div')`
-  position: absolute;
-  height: 100%;
-  width: 100%;
-  top: 0;
-  left: 0;
-  z-index: 1;
-  overflow-y: scroll;
-  color: white;
-`
-
-const ignorePointer = css`
-  pointer-events: none;
-`
-
-const Fixed = styled('div')`
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100vh;
-  width: 100vw;
-  pointer-events: none;
-`
+const overlay = apply`absolute h-screen w-screen top-0 left-0`
 
 function Info({ start, end, ...props }) {
   const [visible, setVisible] = useState(false)
   const transition = useTransition(visible, {
-    from: { position: 'absolute', width: '100%', height: '100%', opacity: 0 },
+    from: { position: 'fixed', width: '100%', height: '100%', opacity: 0 },
     enter: { opacity: 1 },
     leave: { opacity: 0 },
     config: { tension: 400 },
@@ -57,26 +35,48 @@ function Info({ start, end, ...props }) {
 }
 
 export default function App() {
-  const bind = useScroll(({ xy: [x, y], event: { target } }) => (state.progress = y / (target.scrollHeight - target.offsetHeight)))
+  const scrollable = useRef()
+  const onScroll = () => {
+    const el = scrollable.current
+    state.progress = el.scrollTop / (el.scrollHeight - el.offsetHeight)
+  }
+  useEffect(() => void onScroll(), [])
   return (
-    <div tw="h-screen">
-      <Overlay {...bind()} id="foo">
-        <div style={{ height: 10000 }} />
-        <Fixed>
-          <Info start={0} end={0.5}>
-            <div style={{ padding: '10%' }}>
-              <h1 style={{ fontSize: 48 }}>ASSIGNMENT 5</h1>
+    <div tw="overflow-hidden text-white font-poppins">
+      <div ref={scrollable} onScroll={onScroll} id="foo" tw={[overlay, 'z-10 overflow-y-scroll']}>
+        <div tw={['relative pointer-events-none', css({ height: '10000px' })]}>
+          <Info start={0} end={1 / 6 - 0.1}>
+            <div tw="p-32 flex justify-between h-full">
+              <div>
+                <h1 tw="font-bold text(6xl primary)">Assignment 5</h1>
+                <h2 tw="font-semibold text(3xl secondary)">Interactive Presentation</h2>
+              </div>
+              <div tw="text-right">
+                <h1 tw="font-bold text(3xl primary)">Matt Rossman</h1>
+                <h2 tw="font-semibold text(xl secondary)">May 2021</h2>
+              </div>
             </div>
           </Info>
-        </Fixed>
-      </Overlay>
-      <Canvas concurrent className={ignorePointer}>
-        <color attach="background" args={['black']} />
-        <Suspense fallback={null}>
-          <Model />
-          <Environment preset="studio" />
-        </Suspense>
-      </Canvas>
+          <Info start={1 / 6} end={2 / 6}>
+            <div tw="p-32 flex justify-between h-full">
+              <h1 tw="font-bold text(6xl primary)">Design</h1>
+              <div tw="text-right">
+                <h1 tw="font-bold text(3xl primary)">Matt Rossman</h1>
+                <h2 tw="font-semibold text(xl secondary)">May 2021</h2>
+              </div>
+            </div>
+          </Info>
+        </div>
+      </div>
+      <div tw={overlay}>
+        <Canvas concurrent>
+          <color attach="background" args={['black']} />
+          <Suspense fallback={null}>
+            <Model />
+            <Environment preset="studio" />
+          </Suspense>
+        </Canvas>
+      </div>
     </div>
   )
 }

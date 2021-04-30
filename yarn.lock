@@ -250,6 +250,18 @@
   resolved "https://registry.yarnpkg.com/@chevrotain/utils/-/utils-9.0.0.tgz#3b40e30a2007610af9b900125cb654d648f07ac7"
   integrity sha512-J0uI+VxqCMiTFmVD95dfZr1QxJcw1RMQc7X3umMAfEcG5f2uWrZeyX0h3hURvXgzUcK6vXH5r+SNv+4bPxWpdg==
 
+"@emotion/is-prop-valid@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@emotion/is-prop-valid/-/is-prop-valid-1.1.0.tgz#29ef6be1e946fb4739f9707def860f316f668cde"
+  integrity sha512-9RkilvXAufQHsSsjQ3PIzSns+pxuX4EW8EbGeSPjZMHuMx6z/MOzb9LpqNieQX4F3mre3NWS2+X3JNRHTQztUQ==
+  dependencies:
+    "@emotion/memoize" "^0.7.4"
+
+"@emotion/memoize@^0.7.4":
+  version "0.7.5"
+  resolved "https://registry.yarnpkg.com/@emotion/memoize/-/memoize-0.7.5.tgz#2c40f81449a4e554e9fc6396910ed4843ec2be50"
+  integrity sha512-igX9a37DR2ZPGYtV6suZ6whr8pTFtyHL3K/oLUotxpSVO2ASaprmAe2Dkq7tBo7CRY7MMDrAa9nuQP9/YG8FxQ==
+
 "@radix-ui/popper@0.0.10":
   version "0.0.10"
   resolved "https://registry.yarnpkg.com/@radix-ui/popper/-/popper-0.0.10.tgz#9f707d9cec8762423f81acaf8e650e40a554cb73"
@@ -554,6 +566,14 @@
     "@babel/plugin-syntax-typescript" "^7.12.13"
     "@babel/traverse" "^7.13.0"
     tslib "^2.1.0"
+
+"@twind/react@^0.0.4":
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/@twind/react/-/react-0.0.4.tgz#45a513684265bea1ca6f589c799cfb65bd2b5624"
+  integrity sha512-9MWYud1DmUdiC3JY0RXX11f/4PShqVb1uN5qXUqeA/FRbIy3VMeCv5693nH2pFxhTShGng86/dSmcMv4CwBNbA==
+  dependencies:
+    "@emotion/is-prop-valid" "^1.1.0"
+    react-polymorphic-types "^1.0.3"
 
 "@twind/vite-plugin-jsx@^2.1.0":
   version "2.1.0"
@@ -1067,6 +1087,11 @@ react-merge-refs@^1.0.0, react-merge-refs@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/react-merge-refs/-/react-merge-refs-1.1.0.tgz#73d88b892c6c68cbb7a66e0800faa374f4c38b06"
   integrity sha512-alTKsjEL0dKH/ru1Iyn7vliS2QRcBp9zZPGoWxUOvRGWPUYgjo+V01is7p04It6KhgrzhJGnIj9GgX8W4bZoCQ==
+
+react-polymorphic-types@^1.0.3:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/react-polymorphic-types/-/react-polymorphic-types-1.1.0.tgz#5d7062e2991d12187c67a3e8001492c5c1b39018"
+  integrity sha512-RMHYMdiukpyNFeiWEay10e4kiwIlk1VSiIfvVzrimSJ9KVg9B2iNsd6lw2QPG31S2335YuAPnWPalE2w2eh64w==
 
 react-reconciler@^0.26.2:
   version "0.26.2"
