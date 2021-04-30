@@ -1,11 +1,12 @@
-import { Suspense, useEffect, useMemo, useState } from 'react'
-import { Environment, useGLTF } from '@react-three/drei'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Environment, useAnimations, useGLTF } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { styled, css } from 'goober'
-import { AnimationMixer } from 'three'
 import { useSnapshot, proxy, subscribe } from 'valtio'
 import { useScroll } from 'react-use-gesture'
 import { a, useTransition } from '@react-spring/web'
+import * as THREE from 'three'
+import { useDefaultCamera } from './hooks'
 
 const state = proxy({
   progress: 0,
@@ -80,38 +81,15 @@ export default function App() {
   )
 }
 
-function useCamera(root) {
-  // Finds a camera in the passed hierarchy and uses it for scene rendering
-  const camera = root.getObjectByProperty('isCamera', true)
-  useEffect(() => {
-    const onResize = () => {
-      camera.aspect = window.innerWidth / window.innerHeight
-      camera.updateProjectionMatrix()
-    }
-    onResize()
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
-  useFrame(({ gl, scene }) => {
-    gl.render(scene, camera)
-  }, 1)
-}
-
 function Model() {
+  const root = useRef()
+  const t = useRef(0)
   const { scene, animations } = useGLTF('Assignment5.glb')
-  useCamera(scene)
-  const { mixer, actions, duration } = useMemo(() => {
-    const mixer = new AnimationMixer(scene)
-    const actions = animations.map((clip) => mixer.clipAction(clip))
-    actions.forEach((action) => {
-      action.play()
-      action.clampWhenFinished = true
-    })
-    const duration = animations.reduce((acc, clip) => Math.max(acc, clip.duration), 0) - 1e-9
-    return { mixer, actions, duration }
-  }, [animations])
-  subscribe(state, () => {
-    mixer.setTime(state.progress * duration)
-  })
-  return <primitive object={scene} />
+  const duration = animations.reduce((acc, clip) => Math.max(acc, clip.duration), 0) - 1e-9
+  const { actions, mixer } = useAnimations(animations, root)
+  useEffect(() => void Object.values(actions).forEach((action) => action.play()), [])
+  useFrame(() => mixer.setTime((t.current = THREE.MathUtils.lerp(t.current, state.progress * duration, 0.1))))
+  const camera = scene.getObjectByProperty('isCamera', true)
+  useDefaultCamera(camera)
+  return <primitive object={scene} ref={root} />
 }
