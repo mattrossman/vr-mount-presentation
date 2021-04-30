@@ -11,11 +11,6 @@ const state = proxy({
   progress: 0,
 })
 
-const Wrapper = styled('div')`
-  height: 100%;
-  font-family: sans-serif;
-`
-
 const Overlay = styled('div')`
   position: absolute;
   height: 100%;
@@ -49,10 +44,12 @@ function Info({ start, end, ...props }) {
     config: { tension: 400 },
   })
   useEffect(() => {
-    const unsubscribe = subscribe(state, () => {
+    const updateVisibility = () => {
       const shouldBeVisible = start <= state.progress && state.progress < end
       if (visible != shouldBeVisible) setVisible(shouldBeVisible)
-    })
+    }
+    updateVisibility()
+    const unsubscribe = subscribe(state, updateVisibility)
     return unsubscribe
   }, [visible])
   return transition((style, visible) => visible && <a.div style={style} {...props} />)
@@ -61,9 +58,9 @@ function Info({ start, end, ...props }) {
 export default function App() {
   const bind = useScroll(({ xy: [x, y], event: { target } }) => (state.progress = y / (target.scrollHeight - target.offsetHeight)))
   return (
-    <Wrapper>
+    <div tw="h-screen">
       <Overlay {...bind()} id="foo">
-        <div style={{ height: 2000 }} />
+        <div style={{ height: 10000 }} />
         <Fixed>
           <Info start={0} end={0.5}>
             <div style={{ padding: '10%' }}>
@@ -79,11 +76,12 @@ export default function App() {
           <Environment preset="studio" />
         </Suspense>
       </Canvas>
-    </Wrapper>
+    </div>
   )
 }
 
 function useCamera(root) {
+  // Finds a camera in the passed hierarchy and uses it for scene rendering
   const camera = root.getObjectByProperty('isCamera', true)
   useEffect(() => {
     const onResize = () => {
