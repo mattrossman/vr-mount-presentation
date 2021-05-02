@@ -1,21 +1,21 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
-import { Environment, useAnimations, useGLTF } from '@react-three/drei'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Box, Environment, useAnimations, useGLTF } from '@react-three/drei'
+import { Canvas, createPortal, useFrame } from '@react-three/fiber'
 import { css, apply } from 'twind/css'
 import { styled } from '@twind/react'
 import { proxy, subscribe } from 'valtio'
 import { a, useTransition } from '@react-spring/web'
 import * as THREE from 'three'
 import { useDefaultCamera } from './hooks'
+import { useControls } from 'leva'
+import { useLayoutEffect } from 'react'
+window.THREE = THREE
 
 const state = proxy({
   progress: 0,
 })
 
 const overlay = apply`absolute h-screen w-screen top-0 left-0`
-const gradient = css`
-  background: radial-gradient(rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 1));
-`
 
 function Info({ start, end, ...props }) {
   const [visible, setVisible] = useState(false)
@@ -90,7 +90,7 @@ export default function App() {
   useEffect(() => void onScroll(), [])
   const pageDuration = 1 / 6
   return (
-    <div tw={[gradient, 'h-screen overflow-hidden text-white font-poppins']}>
+    <div tw={['h-screen overflow-hidden text-white font-poppins bg-black']}>
       <div ref={scrollable} onScroll={onScroll} id="foo" tw={[overlay, 'z-10 overflow-y-scroll']}>
         <div tw={['relative pointer-events-none', css({ height: '20000px' })]}>
           {pages.map((page, i) => (
@@ -120,12 +120,51 @@ export default function App() {
 function Model() {
   const root = useRef()
   const t = useRef(0)
-  const { scene, animations } = useGLTF('Assignment5.glb')
+  const { scene, nodes, animations } = useGLTF('Assignment5.glb')
+  window.nodes = nodes
+  const lightWindow = nodes['Light_Window']
   const duration = animations.reduce((acc, clip) => Math.max(acc, clip.duration), 0) - 1e-9
   const { actions, mixer } = useAnimations(animations, root)
   useEffect(() => void Object.values(actions).forEach((action) => action.play()), [])
   useFrame(() => mixer.setTime((t.current = THREE.MathUtils.lerp(t.current, state.progress * duration, 0.1))))
   const camera = scene.getObjectByProperty('isCamera', true)
   useDefaultCamera(camera)
-  return <primitive object={scene} ref={root} />
+  const { intensity, color } = useControls({
+    intensity: 1,
+    color: '#ffffff',
+  })
+  useLayoutEffect(() => {
+    lightWindow.material.transparent = true
+    lightWindow.material.opacity = 0.7
+    lightWindow.material.color.set(0)
+
+    // Light window color track
+    const green = [0, 1, 0]
+    const red = [1, 0, 0]
+    const colorTrack = new THREE.ColorKeyframeTrack(
+      '.material.emissive',
+      [60 / 24, 61 / 24, 90 / 24, 105 / 24], // keyframe times
+      [...green, ...red, ...red, ...green] // colors: r1, g1, b1, r2, g2, b2...
+    )
+
+    // Light window intensity track
+    const intensityTrack = new THREE.NumberKeyframeTrack(
+      '.material.emissiveIntensity',
+      [0, 59 / 24, 60 / 24, 89 / 24, 90 / 24], // keyframe times
+      [1, 1, 0, 0, 1]
+    )
+    const clip = new THREE.AnimationClip('colorclip', undefined, [colorTrack, intensityTrack])
+    mixer.clipAction(clip, lightWindow).play()
+  }, [mixer])
+  return (
+    <group>
+      <primitive object={scene} ref={root} />
+      {createPortal(
+        <group>
+          <pointLight intensity={intensity} color={color} />
+        </group>,
+        lightWindow
+      )}
+    </group>
+  )
 }
