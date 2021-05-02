@@ -2,12 +2,10 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Box, Environment, useAnimations, useGLTF } from '@react-three/drei'
 import { Canvas, createPortal, useFrame } from '@react-three/fiber'
 import { css, apply } from 'twind/css'
-import { styled } from '@twind/react'
 import { proxy, subscribe } from 'valtio'
 import { a, useTransition } from '@react-spring/web'
 import * as THREE from 'three'
 import { useDefaultCamera } from './hooks'
-import { useControls } from 'leva'
 import { useLayoutEffect } from 'react'
 window.THREE = THREE
 
@@ -119,9 +117,9 @@ export default function App() {
 
 function Model() {
   const root = useRef()
+  const light = useRef()
   const t = useRef(0)
   const { scene, nodes, animations } = useGLTF('Assignment5.glb')
-  window.nodes = nodes
   const lightWindow = nodes['Light_Window']
   const duration = animations.reduce((acc, clip) => Math.max(acc, clip.duration), 0) - 1e-9
   const { actions, mixer } = useAnimations(animations, root)
@@ -129,42 +127,37 @@ function Model() {
   useFrame(() => mixer.setTime((t.current = THREE.MathUtils.lerp(t.current, state.progress * duration, 0.1))))
   const camera = scene.getObjectByProperty('isCamera', true)
   useDefaultCamera(camera)
-  const { intensity, color } = useControls({
-    intensity: 1,
-    color: '#ffffff',
-  })
   useLayoutEffect(() => {
     lightWindow.material.transparent = true
     lightWindow.material.opacity = 0.7
     lightWindow.material.color.set(0)
 
-    // Light window color track
     const green = [0, 1, 0]
     const red = [1, 0, 0]
-    const colorTrack = new THREE.ColorKeyframeTrack(
-      '.material.emissive',
-      [60 / 24, 61 / 24, 90 / 24, 105 / 24], // keyframe times
-      [...green, ...red, ...red, ...green] // colors: r1, g1, b1, r2, g2, b2...
-    )
+    const colorTimes = [60 / 24, 61 / 24, 97 / 24, 107 / 24]
+    const colorVals = [...green, ...red, ...red, ...green]
+    const intensityTimes = [0, 59 / 24, 60 / 24, 89 / 24, 90 / 24]
+    const intensityVals = [1, 1, 0, 0, 1]
 
-    // Light window intensity track
-    const intensityTrack = new THREE.NumberKeyframeTrack(
-      '.material.emissiveIntensity',
-      [0, 59 / 24, 60 / 24, 89 / 24, 90 / 24], // keyframe times
-      [1, 1, 0, 0, 1]
-    )
-    const clip = new THREE.AnimationClip('colorclip', undefined, [colorTrack, intensityTrack])
-    mixer.clipAction(clip, lightWindow).play()
+    const clipMaterial = new THREE.AnimationClip('clipMaterial', undefined, [
+      new THREE.ColorKeyframeTrack('.material.emissive', colorTimes, colorVals),
+      new THREE.NumberKeyframeTrack('.material.emissiveIntensity', intensityTimes, intensityVals),
+    ])
+    const clipLight = new THREE.AnimationClip('clipLight', undefined, [
+      new THREE.ColorKeyframeTrack('.color', colorTimes, colorVals),
+      new THREE.ColorKeyframeTrack(
+        '.intensity',
+        intensityTimes,
+        intensityVals.map((x) => x * 5)
+      ),
+    ])
+    mixer.clipAction(clipMaterial, lightWindow).play()
+    mixer.clipAction(clipLight, light.current).play()
   }, [mixer])
   return (
     <group>
       <primitive object={scene} ref={root} />
-      {createPortal(
-        <group>
-          <pointLight intensity={intensity} color={color} />
-        </group>,
-        lightWindow
-      )}
+      {createPortal(<rectAreaLight position-z={-0.02} args={[undefined, undefined, 1, 0.5]} ref={light} />, lightWindow)}
     </group>
   )
 }
