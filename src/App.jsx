@@ -35,31 +35,47 @@ function Info({ start, end, ...props }) {
   return transition((style, visible) => visible && <a.div style={style} {...props} />)
 }
 
+const pageLayout = apply(
+  `flex justify-between h-full`,
+  css`
+    padding: 5%;
+    filter: drop-shadow(0px 0px 4px black);
+  `
+)
+
 const pages = [
-  <div tw="p-32 flex justify-between h-full">
+  <div tw={pageLayout}>
     <div>
       <h1 tw="font-bold text(6xl)">Assignment 5</h1>
       <h2 tw="font-semibold text(3xl gray-400)">Interactive Presentation</h2>
     </div>
     <div tw="text-right">
-      <h1 tw="font-bold text(3xl)">Matt Rossman</h1>
-      <h2 tw="font-semibold text(xl gray-400)">May 2021</h2>
+      <div tw="flex flex-col justify-between h-full">
+        <div>
+          <h1 tw="font-bold text(3xl)">Matt Rossman</h1>
+          <h2 tw="font-semibold text(xl gray-400)">May 2021</h2>
+        </div>
+        <div tw="animate-bounce text(xl center)">
+          Scroll to explore
+          <br />▼
+        </div>
+      </div>
     </div>
   </div>,
-  <div tw="p-32 flex justify-between h-full">
+  <div tw={pageLayout}>
     <h1 tw="font-bold text(6xl)">Design</h1>
     <div tw="max-w-xl text-lg">
       The device is a mount that interfaces a standalone VR headset with an articulating monitor arm. This is is valuable for developers who
       need to rapidly switch between using a VR device and a desktop computer without repeatedly taking the headset on and off.
     </div>
   </div>,
-  <div tw="p-32 flex justify-between h-full">
+  <div tw={pageLayout}>
     <h1 tw="font-bold text(6xl)">Articulation</h1>
     <div tw="max-w-xl text-right text-lg">
       Adjust the monitor arm to place the headset comfortably in front of your face, or detach the headset entirely for room scale testing.
     </div>
   </div>,
-  <div tw="p-32 flex justify-between h-full">
+  <div tw={pageLayout}>
     <h1 tw="font-bold text(6xl)">Exploded View</h1>
     <div tw="max-w-xl">
       <p tw="text-2xl font-semibold mb-2">Meeting the 5-3-2-1 Rule:</p>
@@ -71,10 +87,10 @@ const pages = [
       </ul>
     </div>
   </div>,
-  <div tw="p-32 flex justify-between h-full">
+  <div tw={pageLayout}>
     <h1 tw="font-bold text(6xl)">Interactive</h1>
-    <div tw="max-w-xl text-right font-semibold text-xl">
-      Mount the headset to charge and transfer USB 2.0 data. <br />A light bar indicates the headset charge status.
+    <div tw="max-w-xl text-right text-lg">
+      Mount the headset to transmit power and USB 2.0 data. <br />A light bar indicates headset charge status.
     </div>
   </div>,
 ]
@@ -107,7 +123,7 @@ export default function App() {
         <Canvas concurrent>
           <Suspense fallback={null}>
             <Model />
-            <Environment preset="studio" />
+            <Environment files="3_panels_straight_4k.hdr" />
           </Suspense>
         </Canvas>
       </div>
@@ -132,11 +148,11 @@ function Model() {
     lightWindow.material.opacity = 0.7
     lightWindow.material.color.set(0)
 
-    const green = [0, 1, 0]
+    const green = [0, 1, 0.1]
     const red = [1, 0, 0]
     const colorTimes = [60 / 24, 61 / 24, 97 / 24, 107 / 24]
     const colorVals = [...green, ...red, ...red, ...green]
-    const intensityTimes = [0, 59 / 24, 60 / 24, 89 / 24, 90 / 24]
+    const intensityTimes = [0, 59 / 24, 60 / 24, 90 / 24, 92 / 24]
     const intensityVals = [1, 1, 0, 0, 1]
 
     const clipMaterial = new THREE.AnimationClip('clipMaterial', undefined, [
