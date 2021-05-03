@@ -106,7 +106,7 @@ export default function App() {
   return (
     <div tw={['h-screen overflow-hidden text-white font-poppins bg-black']}>
       <div ref={scrollable} onScroll={onScroll} id="foo" tw={[overlay, 'z-10 overflow-y-scroll']}>
-        <div tw={['relative pointer-events-none', css({ height: '20000px' })]}>
+        <div tw={['relative pointer-events-none', css({ height: '15000px' })]}>
           {pages.map((page, i) => (
             <Info key={i} start={i * pageDuration} end={(i + 1) * pageDuration - pageDuration * 0.1}>
               {page}
@@ -137,6 +137,7 @@ function Model() {
   const t = useRef(0)
   const { scene, nodes, animations } = useGLTF('Assignment5.glb')
   const lightWindow = nodes['Light_Window']
+  window.lw = lightWindow
   const duration = animations.reduce((acc, clip) => Math.max(acc, clip.duration), 0) - 1e-9
   const { actions, mixer } = useAnimations(animations, root)
   useEffect(() => void Object.values(actions).forEach((action) => action.play()), [])
@@ -147,17 +148,23 @@ function Model() {
     lightWindow.material.transparent = true
     lightWindow.material.opacity = 0.7
     lightWindow.material.color.set(0)
+    lightWindow.material.roughness = 1
+    lightWindow.material.metalness = 0
 
     const green = [0, 1, 0.1]
     const red = [1, 0, 0]
-    const colorTimes = [60 / 24, 61 / 24, 97 / 24, 107 / 24]
+    const colorTimes = [60 / 24, 61 / 24, 95 / 24, 100 / 24]
     const colorVals = [...green, ...red, ...red, ...green]
-    const intensityTimes = [0, 59 / 24, 60 / 24, 90 / 24, 92 / 24]
+    const intensityTimes = [0, 56 / 24, 58 / 24, 90 / 24, 91 / 24]
     const intensityVals = [1, 1, 0, 0, 1]
 
     const clipMaterial = new THREE.AnimationClip('clipMaterial', undefined, [
-      new THREE.ColorKeyframeTrack('.material.emissive', colorTimes, colorVals),
-      new THREE.NumberKeyframeTrack('.material.emissiveIntensity', intensityTimes, intensityVals),
+      new THREE.ColorKeyframeTrack('.material.emissive', colorTimes, colorVals, THREE.LinearInterpolant),
+      new THREE.NumberKeyframeTrack(
+        '.material.emissiveIntensity',
+        intensityTimes,
+        intensityVals.map((x) => x)
+      ),
     ])
     const clipLight = new THREE.AnimationClip('clipLight', undefined, [
       new THREE.ColorKeyframeTrack('.color', colorTimes, colorVals),
