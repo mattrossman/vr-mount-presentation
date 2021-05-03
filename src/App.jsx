@@ -74,14 +74,14 @@ const pages = [
   </div>,
   <div tw={pageLayout}>
     <h1 tw="font-bold text(6xl)">Design</h1>
-    <div tw="max-w-xl text-right text-lg">
+    <div tw="max-w-xl text-lg">
       The device is a mount that interfaces a standalone VR headset with an articulating monitor arm. This is is valuable for developers who
       need to rapidly switch between using a VR device and a desktop computer without repeatedly taking the headset on and off.
     </div>
   </div>,
   <div tw={pageLayout}>
     <h1 tw="font-bold text(6xl)">Articulation</h1>
-    <div tw="max-w-xl text-right text-lg">
+    <div tw="max-w-xl text-lg">
       Adjust the monitor arm to place the headset comfortably in front of your face, or detach the headset entirely for room scale testing.
     </div>
   </div>,
@@ -102,7 +102,7 @@ const pages = [
   </div>,
   <div tw={pageLayout}>
     <h1 tw="font-bold text(6xl)">Interactive</h1>
-    <div tw="max-w-xl text-right text-lg">
+    <div tw="max-w-xl text-lg">
       Mount the headset to transmit power and USB 2.0 data. <br />A colored light indicates charging progress.
     </div>
   </div>,
@@ -213,6 +213,7 @@ function Model() {
   const light = useRef()
   const t = useRef(0)
   const { scene, nodes, animations } = useGLTF('./Assignment5.glb')
+  window.nodes = nodes
   const lightWindow = nodes['Light_Window']
   const duration = animations.reduce((acc, clip) => Math.max(acc, clip.duration), 0) - 1e-9
   const { actions, mixer } = useAnimations(animations, root)
@@ -264,7 +265,7 @@ function Model() {
       e.stopPropagation()
       let namedEl = e.intersections[0].object
       if (namedEl.name.match(/Assignment/)) namedEl = namedEl.parent
-      let tooltip = namedEl.name.replace(/\d/g, '').replace('_', ' ')
+      let tooltip = namedEl.name.replace(/\d/g, '').replace(/_/g, ' ').trim()
       state.tooltip = tooltip
     }
   }
