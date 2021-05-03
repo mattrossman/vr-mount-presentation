@@ -74,7 +74,7 @@ const pages = [
   </div>,
   <div tw={pageLayout}>
     <h1 tw="font-bold text(6xl)">Design</h1>
-    <div tw="max-w-xl text-lg">
+    <div tw="max-w-xl text-right text-lg">
       The device is a mount that interfaces a standalone VR headset with an articulating monitor arm. This is is valuable for developers who
       need to rapidly switch between using a VR device and a desktop computer without repeatedly taking the headset on and off.
     </div>
