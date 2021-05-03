@@ -7,7 +7,7 @@ import { a, useTransition } from '@react-spring/web'
 import * as THREE from 'three'
 import { useDefaultCamera } from './hooks'
 import { useLayoutEffect } from 'react'
-window.THREE = THREE
+import { ResizeObserver } from '@juggle/resize-observer'
 
 class State {
   progress = 0
@@ -103,8 +103,7 @@ const pages = [
   <div tw={pageLayout}>
     <h1 tw="font-bold text(6xl)">Interactive</h1>
     <div tw="max-w-xl text-right text-lg">
-      Mount the headset to transmit power and USB 2.0 data. <br />
-      The colored light indicates charging progress.
+      Mount the headset to transmit power and USB 2.0 data. <br />A colored light indicates charging progress.
     </div>
   </div>,
 ]
@@ -144,13 +143,15 @@ export default function App() {
   const scrollable = useRef()
   const onScroll = () => {
     const el = scrollable.current
-    state.progress = el.scrollTop / (el.scrollHeight - el.offsetHeight)
+    const progress = el.scrollTop / (el.scrollHeight - el.offsetHeight)
+    state.progress = THREE.MathUtils.clamp(progress, 0, 1)
   }
   useEffect(() => void onScroll(), [])
   const pageDuration = 1 / 6
+  const snap = useSnapshot(state)
   return (
     <div tw="h-screen overflow-hidden w-full text-white font-poppins bg-black">
-      <div>
+      <div tw={['transition-opacity', snap.loaded ? 'opacity-100' : 'opacity-0']}>
         <div ref={scrollable} onScroll={onScroll} id="foo" tw={[overlay, 'z-10 overflow-y-scroll']}>
           <div tw="relative pointer-events-none h-[15000px]">
             {pages.map((page, i) => (
@@ -166,7 +167,7 @@ export default function App() {
           </div>
         </div>
         <div tw={overlay}>
-          <Canvas concurrent onCreated={({ events }) => events.connect(scrollable.current)}>
+          <Canvas concurrent onCreated={({ events }) => events.connect(scrollable.current)} resize={{ polyfill: ResizeObserver }}>
             <Suspense fallback={null}>
               <Model />
               <Environment files="3_panels_straight_4k.hdr" />
@@ -175,15 +176,33 @@ export default function App() {
           </Canvas>
         </div>
       </div>
-
+      <div tw={['h-full transition-opacity', !snap.loaded ? 'opacity-100' : 'opacity-0']}>
+        <Loading />
+      </div>
       <Toolip />
+    </div>
+  )
+}
+
+function Loading() {
+  return (
+    <div tw="h-full w-full flex flex-col gap-2 justify-center items-center">
+      <div
+        tw={[
+          'animate-spin border-4 border-gray-800 w-8 h-8 rounded-full',
+          css`
+            border-top-color: white;
+          `,
+        ]}
+      />
+      <p tw="animate-pulse">Loading</p>
     </div>
   )
 }
 
 function Backdrop() {
   return (
-    <Box args={[100, 100, 100]} onClick={() => console.log('click')} onPointerMove={() => (state.tooltip = null)}>
+    <Box args={[100, 100, 100]} onPointerMove={() => (state.tooltip = null)}>
       <meshBasicMaterial visible={false} side={THREE.BackSide} />
     </Box>
   )
@@ -201,6 +220,10 @@ function Model() {
   useFrame(() => mixer.setTime((t.current = THREE.MathUtils.lerp(t.current, state.progress * duration, 0.1))))
   const camera = scene.getObjectByProperty('isCamera', true)
   useDefaultCamera(camera)
+  useEffect(() => {
+    const timeout = setTimeout(() => (state.loaded = true), 500)
+    return () => clearTimeout(timeout)
+  }, [])
   useLayoutEffect(() => {
     lightWindow.material.transparent = true
     lightWindow.material.opacity = 0.7
