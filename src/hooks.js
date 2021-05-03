@@ -1,8 +1,10 @@
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect } from 'react'
 
 export function useDefaultCamera(camera) {
+  const { set } = useThree()
   useEffect(() => {
+    set({ camera })
     const onResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight
       camera.updateProjectionMatrix()

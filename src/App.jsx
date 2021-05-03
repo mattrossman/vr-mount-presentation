@@ -1,17 +1,27 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Box, Environment, useAnimations, useGLTF } from '@react-three/drei'
-import { Canvas, createPortal, useFrame } from '@react-three/fiber'
+import { Canvas, createPortal, events, useFrame } from '@react-three/fiber'
 import { css, apply } from 'twind/css'
-import { proxy, subscribe } from 'valtio'
+import { proxy, subscribe, useSnapshot, ref } from 'valtio'
 import { a, useTransition } from '@react-spring/web'
 import * as THREE from 'three'
 import { useDefaultCamera } from './hooks'
 import { useLayoutEffect } from 'react'
 window.THREE = THREE
 
-const state = proxy({
-  progress: 0,
-})
+class State {
+  progress = 0
+  tooltip = null
+  loaded = false
+  get exploded() {
+    return this.progress >= 60 / 120 && this.progress < 80 / 120
+  }
+  get activeTooltip() {
+    return this.exploded ? this.tooltip : null
+  }
+}
+
+const state = proxy(new State())
 
 const overlay = apply`absolute h-screen w-screen top-0 left-0`
 
@@ -76,7 +86,10 @@ const pages = [
     </div>
   </div>,
   <div tw={pageLayout}>
-    <h1 tw="font-bold text(6xl)">Exploded View</h1>
+    <div>
+      <h1 tw="font-bold text(6xl)">Exploded View</h1>
+      <h2 tw="font-semibold text(2xl gray-400)">Mouse over for component labels</h2>
+    </div>
     <div tw="max-w-xl">
       <p tw="text-2xl font-semibold mb-2">Meeting the 5-3-2-1 Rule:</p>
       <ul tw="list-disc text-lg">
@@ -90,10 +103,42 @@ const pages = [
   <div tw={pageLayout}>
     <h1 tw="font-bold text(6xl)">Interactive</h1>
     <div tw="max-w-xl text-right text-lg">
-      Mount the headset to transmit power and USB 2.0 data. <br />A light bar indicates headset charge status.
+      Mount the headset to transmit power and USB 2.0 data. <br />
+      The colored light indicates charging progress.
     </div>
   </div>,
 ]
+
+function Toolip() {
+  const ref = useRef()
+  useEffect(() => {
+    const onMouseMove = (e) => {
+      ref.current.style.left = e.x - 200 + 'px'
+      ref.current.style.top = e.y + 40 + 'px'
+    }
+    window.addEventListener('mousemove', onMouseMove)
+    return () => window.removeEventListener('mousemove', onMouseMove)
+  })
+  const snap = useSnapshot(state)
+  const transition = useTransition(snap.activeTooltip, {
+    from: { scale: 0, position: 'absolute' },
+    enter: { scale: 1 },
+    leave: { scale: 0 },
+    config: { tension: 500 },
+  })
+  return (
+    <div ref={ref} tw="fixed w-[400px] grid place-items-center">
+      {transition(
+        (style, tooltip) =>
+          tooltip && (
+            <a.span tw="bg-gray-100 text-black px-2 py-1 rounded whitespace-nowrap" style={style}>
+              {tooltip}
+            </a.span>
+          )
+      )}
+    </div>
+  )
+}
 
 export default function App() {
   const scrollable = useRef()
@@ -104,30 +149,43 @@ export default function App() {
   useEffect(() => void onScroll(), [])
   const pageDuration = 1 / 6
   return (
-    <div tw={['h-screen overflow-hidden text-white font-poppins bg-black']}>
-      <div ref={scrollable} onScroll={onScroll} id="foo" tw={[overlay, 'z-10 overflow-y-scroll']}>
-        <div tw={['relative pointer-events-none', css({ height: '15000px' })]}>
-          {pages.map((page, i) => (
-            <Info key={i} start={i * pageDuration} end={(i + 1) * pageDuration - pageDuration * 0.1}>
-              {page}
+    <div tw="h-screen overflow-hidden w-full text-white font-poppins bg-black">
+      <div>
+        <div ref={scrollable} onScroll={onScroll} id="foo" tw={[overlay, 'z-10 overflow-y-scroll']}>
+          <div tw="relative pointer-events-none h-[15000px]">
+            {pages.map((page, i) => (
+              <Info key={i} start={i * pageDuration} end={(i + 1) * pageDuration - pageDuration * 0.1}>
+                {page}
+              </Info>
+            ))}
+            <Info start={0.99} end={1 + 1e9}>
+              <div tw="p-64 flex flex-col justify-center h-full">
+                <h1 tw="text-8xl font-bold">Fin.</h1>
+              </div>
             </Info>
-          ))}
-          <Info start={0.99} end={1 + 1e9}>
-            <div tw="p-64 flex flex-col justify-center h-full">
-              <h1 tw="text-8xl font-bold">Fin.</h1>
-            </div>
-          </Info>
+          </div>
+        </div>
+        <div tw={overlay}>
+          <Canvas concurrent onCreated={({ events }) => events.connect(scrollable.current)}>
+            <Suspense fallback={null}>
+              <Model />
+              <Environment files="3_panels_straight_4k.hdr" />
+              <Backdrop />
+            </Suspense>
+          </Canvas>
         </div>
       </div>
-      <div tw={overlay}>
-        <Canvas concurrent>
-          <Suspense fallback={null}>
-            <Model />
-            <Environment files="3_panels_straight_4k.hdr" />
-          </Suspense>
-        </Canvas>
-      </div>
+
+      <Toolip />
     </div>
+  )
+}
+
+function Backdrop() {
+  return (
+    <Box args={[100, 100, 100]} onClick={() => console.log('click')} onPointerMove={() => (state.tooltip = null)}>
+      <meshBasicMaterial visible={false} side={THREE.BackSide} />
+    </Box>
   )
 }
 
@@ -137,7 +195,6 @@ function Model() {
   const t = useRef(0)
   const { scene, nodes, animations } = useGLTF('Assignment5.glb')
   const lightWindow = nodes['Light_Window']
-  window.lw = lightWindow
   const duration = animations.reduce((acc, clip) => Math.max(acc, clip.duration), 0) - 1e-9
   const { actions, mixer } = useAnimations(animations, root)
   useEffect(() => void Object.values(actions).forEach((action) => action.play()), [])
@@ -177,9 +234,20 @@ function Model() {
     mixer.clipAction(clipMaterial, lightWindow).play()
     mixer.clipAction(clipLight, light.current).play()
   }, [mixer])
+
+  const snap = useSnapshot(state)
+  const onPointerMove = (e) => {
+    if (state.exploded) {
+      e.stopPropagation()
+      let namedEl = e.intersections[0].object
+      if (namedEl.name.match(/Assignment/)) namedEl = namedEl.parent
+      let tooltip = namedEl.name.replace(/\d/g, '').replace('_', ' ')
+      state.tooltip = tooltip
+    }
+  }
   return (
     <group>
-      <primitive object={scene} ref={root} />
+      <primitive object={scene} ref={root} onPointerMove={snap.exploded && onPointerMove} />
       {createPortal(<rectAreaLight position-z={-0.02} args={[undefined, undefined, 1, 0.5]} ref={light} />, lightWindow)}
     </group>
   )
