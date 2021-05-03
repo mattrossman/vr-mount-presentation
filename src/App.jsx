@@ -170,7 +170,7 @@ export default function App() {
           <Canvas concurrent onCreated={({ events }) => events.connect(scrollable.current)} resize={{ polyfill: ResizeObserver }}>
             <Suspense fallback={null}>
               <Model />
-              <Environment files="3_panels_straight_4k.hdr" />
+              <Environment files="3_panels_straight_4k.hdr" path="./" />
               <Backdrop />
             </Suspense>
           </Canvas>
@@ -212,7 +212,7 @@ function Model() {
   const root = useRef()
   const light = useRef()
   const t = useRef(0)
-  const { scene, nodes, animations } = useGLTF('Assignment5.glb')
+  const { scene, nodes, animations } = useGLTF('./Assignment5.glb')
   const lightWindow = nodes['Light_Window']
   const duration = animations.reduce((acc, clip) => Math.max(acc, clip.duration), 0) - 1e-9
   const { actions, mixer } = useAnimations(animations, root)
